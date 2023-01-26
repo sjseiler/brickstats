@@ -1,16 +1,20 @@
-/// A tool for generating lego related diagrams and visualizations.
-
+mod gnuplot_wrapper;
 mod plot;
-use plot::{Histogram, Bins, Data};
-use reqwest;
-use serde_json::Value;
+/// A tool for generating lego related diagrams and visualizations.
+mod png_plot;
 use colored::Colorize;
 use lazy_static::lazy_static;
+use plot::{Bins, Histogram};
+use reqwest;
+use serde_json::Value;
 
-lazy_static!{
+lazy_static! {
     // read api token from file "../secrets/api_token.txt"
     static ref API_AUTH_TOKEN: Box<String> = Box::new(std::fs::read_to_string("secrets/api_token.txt").unwrap());
 }
+
+const CATEGORY_PAGE_SIZE: i32 = 500;
+const INVENTORY_PAGE_SIZE: i32 = 100;
 
 // part details
 #[allow(non_camel_case_types, dead_code)]
@@ -22,7 +26,7 @@ struct part_details {
     year_from: i32,
     year_to: i32,
     part_url: String,
-    part_img_url: String,
+    part_img_url: Option<String>,
     prints: Vec<String>,
     molds: Vec<String>,
     alternates: Vec<String>,
@@ -138,16 +142,15 @@ struct theme {
     last_modified_dt: String,
 }
 
-// get color rgb values for a vector of inventory_parts as a vector of 
-
+// get color rgb values for a vector of inventory_parts as a vector of
 
 impl part_category {
     pub fn get_all() -> Vec<part_category> {
         // get list of part categories from /api/v3/lego/part_categories/
         // http request
         let url = format!(
-            "https://rebrickable.com/api/v3/lego/part_categories/?key={}",
-            *API_AUTH_TOKEN
+            "https://rebrickable.com/api/v3/lego/part_categories/?page_size={}&ordering=name&key={}",
+            CATEGORY_PAGE_SIZE, *API_AUTH_TOKEN
         );
         println!("Downloading {}", url);
         let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
@@ -201,23 +204,26 @@ impl inventory {
         let mut inventory_parts = Vec::new();
         let mut page = 1;
         loop {
-            let url = format!("{}?page={}&key={}&inc_minifig_parts=1", self.inventory_url, page, *API_AUTH_TOKEN);
+            let url = format!(
+                "{}?page={}&page_size={}&ordering=color&key={}&inc_minifig_parts=1",
+                self.inventory_url, page, INVENTORY_PAGE_SIZE, *API_AUTH_TOKEN
+            );
             println!("Downloading {}", url);
 
-            let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+            let response =
+                reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
             if response.status() != 200 {
                 break;
             }
 
             // get response body
             let response_text = response.text().expect(&format!("Error reading {}", url));
-            let response_json: serde_json::Value =
-                match serde_json::from_str(&response_text) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        panic!("Error parsing response text {}: {}", response_text, e);
-                    }
-                };
+            let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
+                Ok(v) => v,
+                Err(e) => {
+                    panic!("Error parsing response text {}: {}", response_text, e);
+                }
+            };
             let results = response_json["results"]
                 .as_array()
                 .expect(&format!("Error parsing json {}", response_json));
@@ -270,15 +276,14 @@ impl part_details {
         }
         // get response body
         let response_text = response.text().expect(&format!("Error reading {}", url));
-        let response_json: serde_json::Value =
-            match serde_json::from_str(&response_text) {
-                Ok(v) => v,
-                Err(e) => {
-                    panic!("Error parsing response text {}: {}", response_text, e);
-                }
-            };  
+        let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
+            Ok(v) => v,
+            Err(e) => {
+                panic!("Error parsing response text {}: {}", response_text, e);
+            }
+        };
         // println!("Parsing {}", response_text);
-        
+
         let part_details = part_details {
             part_num: response_json["part_num"]
                 .as_str()
@@ -304,10 +309,15 @@ impl part_details {
                 .as_str()
                 .expect(&format!("Error parsing part_url {}", response_json))
                 .to_string(),
-            part_img_url: response_json["part_img_url"]
-                .as_str()
-                .expect(&format!("Error parsing part_img_url {}", response_json))
-                .to_string(),
+            part_img_url: match response_json["part_img_url"] {
+                serde_json::Value::Null => None,
+                _ => Some(
+                    response_json["part_img_url"]
+                        .as_str()
+                        .expect(&format!("Error parsing part_img_url {}", response_json))
+                        .to_string(),
+                ),
+            },
             prints: response_json["prints"]
                 .as_array()
                 .expect(&format!("Error parsing prints {}", response_json))
@@ -325,13 +335,15 @@ impl part_details {
                 .expect(&format!("Error parsing alternates {}", response_json))
                 .iter()
                 .map(|alternate| alternate.to_string())
-                .collect(),                
+                .collect(),
             print_of: match response_json["print_of"] {
                 serde_json::Value::Null => None,
-                _ => Some(response_json["print_of"]
-                    .as_str()
-                    .expect(&format!("Error parsing print_of {}", response_json))
-                    .to_string()),
+                _ => Some(
+                    response_json["print_of"]
+                        .as_str()
+                        .expect(&format!("Error parsing print_of {}", response_json))
+                        .to_string(),
+                ),
             },
         };
         part_details
@@ -344,7 +356,7 @@ impl part_details {
         println!("Part Category: {}", self.part_cat_id);
         println!("Year: {} - {}", self.year_from, self.year_to);
         println!("Part URL: {}", self.part_url);
-        println!("Part Image URL: {}", self.part_img_url);
+        println!("Part Image URL: {:?}", self.part_img_url);
         println!("Prints: {}", self.prints.join(", "));
         println!("Molds: {}", self.molds.join(", "));
         println!("Alternates: {}", self.alternates.join(", "));
@@ -352,7 +364,10 @@ impl part_details {
     }
 
     // calculate average age of parts in inventory
-    fn average_part_year(inventory_parts: &Vec<inventory_part>, part_details: &Vec<part_details>) -> f32 {
+    fn average_part_year(
+        inventory_parts: &Vec<inventory_part>,
+        part_details: &Vec<part_details>,
+    ) -> f32 {
         let mut average_year = 0.0;
         let mut part_count = 0;
 
@@ -365,7 +380,6 @@ impl part_details {
         }
         average_year / part_count as f32
     }
-
 
     // get many part_details at once
     fn get_many(part_numbers: &Vec<String>) -> Vec<part_details> {
@@ -381,7 +395,8 @@ impl part_details {
         println!("Getting part details for {} parts", part_numbers.len());
         let url = format!(
             "https://rebrickable.com/api/v3/lego/parts/?key={}&part_nums={}&inc_part_details=1",
-            *API_AUTH_TOKEN, part_numbers.join(",")
+            *API_AUTH_TOKEN,
+            part_numbers.join(",")
         );
         println!("Downloading {}", url);
         let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
@@ -391,15 +406,14 @@ impl part_details {
         }
         // get response body
         let response_text = response.text().expect(&format!("Error reading {}", url));
-        let response_json: serde_json::Value =
-            match serde_json::from_str(&response_text) {
-                Ok(v) => v,
-                Err(e) => {
-                    panic!("Error parsing response text {}: {}", response_text, e);
-                }
-            };  
+        let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
+            Ok(v) => v,
+            Err(e) => {
+                panic!("Error parsing response text {}: {}", response_text, e);
+            }
+        };
         // println!("Parsing {}", response_text);
-        
+
         let many_part_details = response_json["results"]
             .as_array()
             .expect(&format!("Error parsing results {}", response_json))
@@ -431,10 +445,15 @@ impl part_details {
                         .as_str()
                         .expect(&format!("Error parsing part_url {}", result))
                         .to_string(),
-                    part_img_url: result["part_img_url"]
-                        .as_str()
-                        .expect(&format!("Error parsing part_img_url {}", result))
-                        .to_string(),
+                    part_img_url: match result["part_img_url"] {
+                        serde_json::Value::Null => None,
+                        _ => Some(
+                            result["part_img_url"]
+                                .as_str()
+                                .expect(&format!("Error parsing part_img_url {}", result))
+                                .to_string(),
+                        ),
+                    },
                     prints: result["prints"]
                         .as_array()
                         .expect(&format!("Error parsing prints {}", result))
@@ -452,13 +471,15 @@ impl part_details {
                         .expect(&format!("Error parsing alternates {}", result))
                         .iter()
                         .map(|alternate| alternate.to_string())
-                        .collect(),                
+                        .collect(),
                     print_of: match result["print_of"] {
                         serde_json::Value::Null => None,
-                        _ => Some(result["print_of"]
-                            .as_str()
-                            .expect(&format!("Error parsing print_of {}", result))
-                            .to_string()),
+                        _ => Some(
+                            result["print_of"]
+                                .as_str()
+                                .expect(&format!("Error parsing print_of {}", result))
+                                .to_string(),
+                        ),
                     },
                 };
                 part_details
@@ -498,7 +519,13 @@ impl inventory_part {
             .collect::<Vec<String>>();
         part_quantities.sort();
         part_quantities.dedup();
-        println!("{} {} {} {}", "Part".green(), "Color".green(), "Quantity".green(), "Spare".green());
+        println!(
+            "{} {} {} {}",
+            "Part".green(),
+            "Color".green(),
+            "Quantity".green(),
+            "Spare".green()
+        );
         for part_number in part_numbers {
             for part_color in &part_colors {
                 let mut quantity = 0;
@@ -538,13 +565,12 @@ impl part {
         }
         // get response body
         let response_text = response.text().expect(&format!("Error reading {}", url));
-        let response_json: serde_json::Value =
-            match serde_json::from_str(&response_text) {
-                Ok(v) => v,
-                Err(e) => {
-                    panic!("Error parsing response text {}: {}", response_text, e);
-                }
-            };
+        let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
+            Ok(v) => v,
+            Err(e) => {
+                panic!("Error parsing response text {}: {}", response_text, e);
+            }
+        };
         let part_num = response_json["part_num"]
             .as_str()
             .expect(&format!("Error parsing part_num {}", response_json))
@@ -565,7 +591,12 @@ impl part {
             .as_array()
             .expect(&format!("Error parsing external_ids {}", response_json))
             .iter()
-            .map(|external_id| external_id["external_id"].as_str().expect(&format!("Error parsing external_id {}", external_id)).to_string())
+            .map(|external_id| {
+                external_id["external_id"]
+                    .as_str()
+                    .expect(&format!("Error parsing external_id {}", external_id))
+                    .to_string()
+            })
             .collect();
         let part_cat_id = response_json["part_cat_id"]
             .as_i64()
@@ -599,6 +630,14 @@ fn main() {
     let set_num = &args[1];
     println!("set_num: {}", set_num);
 
+    // download_plot_shell(set_num);
+
+    // png_plot::example_stacked_histogram_labeled_bins();
+    gnuplot_wrapper::Gnuplot::show_example().unwrap();
+}
+
+// download inventory and plot it in histogram
+fn download_plot_shell(set_num: &str) {
     // download set inventory
     let inventory = inventory::new(set_num);
     let inventory_parts = inventory.download();
@@ -612,11 +651,12 @@ fn main() {
     part_details.print();
 
     // print part details for all parts
-    let all_part_details = part_details::get_many(&inventory_parts.iter().map(|p| p.part_num.clone()).collect());
+    let all_part_details =
+        part_details::get_many(&inventory_parts.iter().map(|p| p.part_num.clone()).collect());
     println!("Got part details for {} parts", all_part_details.len());
     // for part_details in &all_part_details {
     //     part_details.print();
-    // } 
+    // }
     let avg_year = part_details::average_part_year(&inventory_parts, &all_part_details);
     println!("avg_year: {}", avg_year);
 
@@ -626,7 +666,7 @@ fn main() {
     //     if !all_part_categories.contains(&part_details.part_cat_id) {
     //         all_part_categories.push(part_details.part_cat_id);
     //     }
-    // }   
+    // }
 
     // get the part_categories lookup table from rebrickable
     let category_details = part_category::get_all();
@@ -639,16 +679,25 @@ fn main() {
     // for all inventory_parts
     for inventory_part in &inventory_parts {
         // find the part_category_id for the part by part_num
-        let part_category_id = match all_part_details.iter().find(|part_details| part_details.part_num == inventory_part.part_num){
+        let part_category_id = match all_part_details
+            .iter()
+            .find(|part_details| part_details.part_num == inventory_part.part_num)
+        {
             Some(part_details) => part_details.part_cat_id,
             None => {
-                println!("Error finding part_category_id for part_num {}", inventory_part.part_num);
+                println!(
+                    "Error finding part_category_id for part_num {}",
+                    inventory_part.part_num
+                );
                 0
-            },
+            }
         };
-        
+
         // if data already contains a Data with the same label, add the quantity to the existing Data
-        if let Some(tuple) = data_tuples.iter_mut().find(|data| data.0 == part_category_id) {
+        if let Some(tuple) = data_tuples
+            .iter_mut()
+            .find(|data| data.0 == part_category_id)
+        {
             tuple.1 += inventory_part.quantity;
         } else {
             // otherwise create a new Data with the label and quantity
@@ -657,14 +706,22 @@ fn main() {
     }
 
     // create empty data vector
-    let mut data: Vec<Data> = Vec::new();
+    let mut data: Vec<plot::Data> = Vec::new();
 
     // look-up the part_category names
     for (part_category_id, quantity) in &data_tuples {
-        let part_category_name = category_details.iter().find(|category_details| category_details.id == *part_category_id).unwrap().name.clone();
-        data.push(Data::new_with_label(*quantity as f64, &part_category_name));
+        let part_category_name = category_details
+            .iter()
+            .find(|category_details| category_details.id == *part_category_id)
+            .unwrap()
+            .name
+            .clone();
+        data.push(plot::Data::new_with_label(
+            *quantity as f64,
+            &part_category_name,
+        ));
     }
-    
+
     let bins = Bins::new_from_labels(&data);
 
     let histogram = Histogram::new(&data, bins);

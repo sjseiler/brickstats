@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Label (String);
+pub struct Label(String);
 
 impl Label {
     pub fn new(label: &str) -> Label {
@@ -16,10 +16,7 @@ pub struct Data {
 impl Data {
     #[allow(dead_code)]
     pub fn new(value: f64) -> Data {
-        Data {
-            value,
-            label: None,
-        }
+        Data { value, label: None }
     }
 
     pub fn new_with_label(value: f64, label: &str) -> Data {
@@ -96,7 +93,6 @@ impl Bins {
 }
 
 impl Histogram {
-
     // create histogram from data and bins
     pub fn new(data: &Vec<Data>, bins: Bins) -> Self {
         let histogram = Histogram {
@@ -123,9 +119,16 @@ impl Histogram {
             let count = counts[i];
             let bar_len = (count as f64 / *max_count as f64 * max_bar_len as f64) as usize;
             let bar = "=".repeat(bar_len);
-            println!("{:width$} | {:>width2$} | {}", self.bins.bins[i].0, count, bar, width = max_label_len, width2 = max_count_len);
+            println!(
+                "{:width$} | {:>width2$} | {}",
+                self.bins.bins[i].0,
+                count,
+                bar,
+                width = max_label_len,
+                width2 = max_count_len
+            );
         }
-    }   
+    }
 
     // plot weighted histogram (data values are weights and added up for each bin)
     // align labels to the left and bars to the right
@@ -133,22 +136,38 @@ impl Histogram {
         let mut weighted_labels = Vec::new();
         for label in &self.bins.bins {
             // sum all values from data where label matches
-            let sum = self.data.iter().filter(|d| d.label == Some(label.clone())).map(|d| d.value).sum::<f64>();
+            let sum = self
+                .data
+                .iter()
+                .filter(|d| d.label == Some(label.clone()))
+                .map(|d| d.value)
+                .sum::<f64>();
             weighted_labels.push((label.clone(), sum.round() as i32));
         }
 
         // sort weighted labels by label string
         weighted_labels.sort_by(|a, b| a.0.cmp(&b.0));
         // weighted_labels.sort_by(|a, b| b.1.cmp(&a.1));
-        
+
         let max_count = weighted_labels.iter().map(|(_, c)| c).max().unwrap();
         let max_count_len = max_count.to_string().len();
-        let max_label_len = weighted_labels.iter().map(|(l, _)| l.0.len()).max().unwrap();
+        let max_label_len = weighted_labels
+            .iter()
+            .map(|(l, _)| l.0.len())
+            .max()
+            .unwrap();
         let max_bar_len = 80 - max_count_len - max_label_len - 4;
         for (label, count) in &weighted_labels {
             let bar_len = (*count as f64 / *max_count as f64 * max_bar_len as f64) as usize;
             let bar = "=".repeat(bar_len);
-            println!("{:width$} | {:>width2$} | {}", label.0, count, bar, width = max_label_len, width2 = max_count_len);
-        }         
+            println!(
+                "{:width$} | {:>width2$} | {}",
+                label.0,
+                count,
+                bar,
+                width = max_label_len,
+                width2 = max_count_len
+            );
+        }
     }
 }

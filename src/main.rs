@@ -2,6 +2,8 @@ mod gnuplot_wrapper;
 mod plot;
 /// A tool for generating lego related diagrams and visualizations.
 mod png_plot;
+use std::ops::RangeBounds;
+
 use colored::Colorize;
 use lazy_static::lazy_static;
 use plot::{Bins, Histogram};
@@ -143,6 +145,38 @@ struct theme {
 }
 
 // get color rgb values for a vector of inventory_parts as a vector of
+impl color {
+    pub fn get_all() -> Vec<color> {
+        // get list of part categories from /api/v3/lego/part_categories/
+        // http request
+        let url = format!(
+            "https://rebrickable.com/api/v3/lego/colors/?page_size={}&ordering=name&key={}",
+            1000, *API_AUTH_TOKEN
+        );
+        println!("Downloading {}", url);
+        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        if response.status() != 200 {
+            panic!("Error downloading {}", url);
+        }
+        let json: Value = serde_json::from_str(&response.text().unwrap()).unwrap();
+        let mut colors = Vec::new();
+        for color in json["results"].as_array().unwrap() {
+            let id = color["id"].as_i64().unwrap() as i32;
+            let name = color["name"].as_str().unwrap().to_string();
+            let is_trans = color["is_trans"].as_bool().unwrap();
+            let rgb = color["rgb"].as_str().unwrap().to_string();
+
+            colors.push(color {
+                id,
+                rgb,
+                is_trans,
+                name,
+            });
+        }
+
+        colors
+    }
+}
 
 impl part_category {
     pub fn get_all() -> Vec<part_category> {
@@ -630,10 +664,115 @@ fn main() {
     let set_num = &args[1];
     println!("set_num: {}", set_num);
 
-    // download_plot_shell(set_num);
+    download_plot(set_num);
+}
 
-    // png_plot::example_stacked_histogram_labeled_bins();
-    gnuplot_wrapper::Gnuplot::show_example().unwrap();
+fn download_plot(set_num: &str){
+    // download set inventory
+    let inventory = inventory::new(set_num);
+    let inventory_parts = inventory.download();
+
+    // get part details for all parts
+    let all_part_details =
+        part_details::get_many(&inventory_parts.iter().map(|p| p.part_num.clone()).collect());
+    println!("Got part details for {} parts", all_part_details.len());
+
+    let category_details = part_category::get_all();
+    let colors = color::get_all();
+
+    // create new vector with (part_category_id, quantity, color_id) tuples
+    let mut data_tuples: Vec<(i32, i32, i32)> = Vec::new();
+    // for all inventory_parts
+    for inventory_part in &inventory_parts {
+        // find the part_category_id for the part by part_num
+        let part_category_id = match all_part_details
+            .iter()
+            .find(|part_details| part_details.part_num == inventory_part.part_num)
+        {
+            Some(part_details) => part_details.part_cat_id,
+            None => {
+                println!(
+                    "Error finding part_category_id for part_num {}",
+                    inventory_part.part_num
+                );
+                0
+            }
+        };
+        data_tuples.push((part_category_id, inventory_part.quantity, inventory_part.color_id));
+    }
+
+    let mut data: Vec<Vec<i32>> = Vec::new();
+    let mut labels: Vec<String> = Vec::new();
+    let mut color_rgbs: Vec<String> = Vec::new();
+    let mut color_ids: Vec<i32> = Vec::new();
+
+    // fill unique part_category_ids
+    let mut unique_part_category_ids: Vec<i32> = Vec::new();
+    for (part_category_id, _, _) in &data_tuples {
+        if !unique_part_category_ids.contains(part_category_id) {
+            unique_part_category_ids.push(*part_category_id);
+        }
+    }
+
+    // fill data and color_ids with with datatuples values
+    for tuple in &data_tuples {
+        // get index of part_category_id in unique_part_category_ids
+        let index = unique_part_category_ids
+            .iter()
+            .position(|id| id == &tuple.0)
+            .unwrap();
+        
+        // get len of unique_part_category_ids
+        let len = unique_part_category_ids.len();
+
+        // create new data vector
+        let mut new_data: Vec<i32> = vec![0; len];
+
+        // set quantity at index
+        new_data[index] = tuple.1;
+
+        // push new_data to data
+        data.push(new_data);
+
+        // push color_id to color_ids
+        color_ids.push(tuple.2);
+    }
+
+    // replace unique_part_category_ids with names
+    for part_category_id in &unique_part_category_ids {
+        let part_category_name = match category_details
+            .iter()
+            .find(|category_details| category_details.id == *part_category_id)
+        {
+            Some(category_details) => category_details.name.clone(),
+            None => {
+                println!(
+                    "Error finding part_category_name for part_category_id {}",
+                    part_category_id
+                );
+                "unknown".to_string()
+            }
+        };
+        labels.push(part_category_name);
+    }
+
+    // replace color_ids with rgb values
+    for id in color_ids {
+        let rgb = match colors.iter().find(|color| color.id == id) {
+            Some(color) => color.rgb.clone(),
+            None => {
+                println!("Error finding rgb for color_id {}", id);
+                "000000".to_string()
+            }
+        };
+        color_rgbs.push(rgb);
+    }
+
+    // print color_rgbs
+    println!("color_rgbs: {:?}", color_rgbs);
+
+
+    gnuplot_wrapper::Gnuplot::show(gnuplot_wrapper::DEFAULT_CONFIG, labels, data, color_rgbs).unwrap();
 }
 
 // download inventory and plot it in histogram

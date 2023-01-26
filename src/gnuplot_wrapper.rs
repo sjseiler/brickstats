@@ -22,13 +22,24 @@ pub struct Gnuplot {
 }
 
 impl Gnuplot {
-    pub fn show(config: &str, labels: Vec<String>, data: Vec<Vec<i32>>, colors: Vec<String>) -> Result<()> {
+    pub fn show(
+        config: &str,
+        labels: Vec<String>,
+        data: Vec<Vec<i32>>,
+        colors: Vec<String>,
+    ) -> Result<()> {
         let mut color_iter = colors.iter();
         // generate config string
         let mut config_string = config.to_string();
-        config_string.push_str(&format!("\nplot '-' using 2:xtic(1) with histogram notitle lc rgb \"#{}\",", color_iter.next().expect("didn't get enough colors")));
+        config_string.push_str(&format!(
+            "\nplot '-' using 2:xtic(1) with histogram notitle lc rgb \"#{}\",",
+            color_iter.next().expect("didn't get enough colors")
+        ));
         for _ in data.iter().skip(1) {
-            config_string.push_str(&format!(" '-' using 2 with histogram notitle lc rgb \"#{}\",", color_iter.next().expect("didn't get enough colors")));
+            config_string.push_str(&format!(
+                " '-' using 2 with histogram notitle lc rgb \"#{}\",",
+                color_iter.next().expect("didn't get enough colors")
+            ));
         }
         // remove last comma
         config_string.pop();
@@ -37,7 +48,8 @@ impl Gnuplot {
         // generate data string from labels and data
         // make iterator from data
         for d in data.iter() {
-            let mut data = labels.iter()
+            let mut data = labels
+                .iter()
                 .zip(d.iter())
                 .map(|(label, value)| format!("\"{}\" {}", label, value))
                 .collect::<Vec<String>>()
@@ -45,7 +57,7 @@ impl Gnuplot {
             // add end of data marker
             data.push_str("\ne\n");
             data_string.push_str(&data);
-        }   
+        }
 
         // print config and data
         // println!("{}", config_string);
@@ -95,13 +107,12 @@ impl Gnuplot {
     //         "000000",
     //     ];
 
-
     //     // generate labels for each row
     //     let labels = vec![
     //         "label1", "label2", "label3", "label4", "label5", "label6", "label7", "label8", "label9",
     //         "label10",
     //     ];
-           
+
     //     Self::show(config, labels, data, colors)
     // }
 }

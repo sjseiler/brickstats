@@ -667,7 +667,7 @@ fn main() {
     download_plot(set_num);
 }
 
-fn download_plot(set_num: &str){
+fn download_plot(set_num: &str) {
     // download set inventory
     let inventory = inventory::new(set_num);
     let inventory_parts = inventory.download();
@@ -698,8 +698,15 @@ fn download_plot(set_num: &str){
                 0
             }
         };
-        data_tuples.push((part_category_id, inventory_part.quantity, inventory_part.color_id));
+        data_tuples.push((
+            part_category_id,
+            inventory_part.quantity,
+            inventory_part.color_id,
+        ));
     }
+
+    // sort data tuples by color_id
+    data_tuples.sort_by(|a, b| a.2.cmp(&b.2));
 
     let mut data: Vec<Vec<i32>> = Vec::new();
     let mut labels: Vec<String> = Vec::new();
@@ -714,6 +721,37 @@ fn download_plot(set_num: &str){
         }
     }
 
+    // sort unique_part_category_ids by category name
+    unique_part_category_ids.sort_by(|a, b| {
+        let a_name = match category_details
+            .iter()
+            .find(|category_details| category_details.id == *a)
+        {
+            Some(category_details) => category_details.name.clone(),
+            None => {
+                println!(
+                    "Error finding part_category_name for part_category_id {}",
+                    a
+                );
+                "unknown".to_string()
+            }
+        };
+        let b_name = match category_details
+            .iter()
+            .find(|category_details| category_details.id == *b)
+        {
+            Some(category_details) => category_details.name.clone(),
+            None => {
+                println!(
+                    "Error finding part_category_name for part_category_id {}",
+                    b
+                );
+                "unknown".to_string()
+            }
+        };
+        a_name.cmp(&b_name)
+    });
+
     // fill data and color_ids with with datatuples values
     for tuple in &data_tuples {
         // get index of part_category_id in unique_part_category_ids
@@ -721,7 +759,7 @@ fn download_plot(set_num: &str){
             .iter()
             .position(|id| id == &tuple.0)
             .unwrap();
-        
+
         // get len of unique_part_category_ids
         let len = unique_part_category_ids.len();
 
@@ -771,8 +809,16 @@ fn download_plot(set_num: &str){
     // print color_rgbs
     println!("color_rgbs: {:?}", color_rgbs);
 
-
-    gnuplot_wrapper::Gnuplot::show(gnuplot_wrapper::DEFAULT_CONFIG, labels, data, color_rgbs).unwrap();
+    gnuplot_wrapper::Gnuplot::show(
+        &format!(
+            "{}\nset title \"Parts of Set {set_num}",
+            gnuplot_wrapper::DEFAULT_CONFIG
+        ),
+        labels,
+        data,
+        color_rgbs,
+    )
+    .unwrap();
 }
 
 // download inventory and plot it in histogram

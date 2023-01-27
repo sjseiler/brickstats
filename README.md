@@ -14,3 +14,4 @@
 * export histogram as png instead of opening gnuplot
 * convert histogram to horizontal (work-around required)
 * label histogram total amount per bin
+* improve performance by reducing loops over data vectors (e.g. part category id and part category names)

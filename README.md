@@ -18,3 +18,6 @@
 * show transparent colors as transparent
 * mark prints with (e.g. with dashes)
 * increase number of parts per page
+* add total amount of parts to histogram (official)
+* improve font and font size of histogram
+* improve histogram display of minifigure heads --> some are summarized to a single box, others are not

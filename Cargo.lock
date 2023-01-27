@@ -43,7 +43,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "colored",
- "gnuplot",
  "lazy_static",
  "reqwest",
  "serde",
@@ -55,12 +54,6 @@ name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
-
-[[package]]
-name = "byteorder"
-version = "1.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "bytes"
@@ -201,13 +194,6 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
-]
-
-[[package]]
-name = "gnuplot"
-version = "0.0.37"
-dependencies = [
- "byteorder",
 ]
 
 [[package]]

@@ -12,12 +12,12 @@
 * use color rgb values from initial inventory download
 * add caching to color and category list to improve speed
 * export histogram as png instead of opening gnuplot
-* convert histogram to horizontal (work-around required)
 * label histogram total amount per bin
 * improve performance by reducing loops over data vectors (e.g. part category id and part category names)
 * show transparent colors as transparent
 * mark prints with (e.g. with dashes)
 * increase number of parts per page
-* add total amount of parts to histogram (official)
+* add total amount of parts to histogram (official value)
 * improve font and font size of histogram
-* improve histogram display of minifigure heads --> some are summarized to a single box, others are not
+* refactoring
+* add support for rebrickable csv files

@@ -2,10 +2,7 @@ use crate::rebrickable::{inventory_part, part_details};
 
 // calculate average age of parts in inventory
 #[allow(dead_code)]
-pub fn average_part_year(
-    inventory_parts: &Vec<inventory_part>,
-    part_details: &Vec<part_details>,
-) -> f32 {
+pub fn average_part_year(inventory_parts: &[inventory_part], part_details: &[part_details]) -> f32 {
     let mut average_year = 0.0;
     let mut part_count = 0;
 

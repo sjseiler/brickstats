@@ -1,6 +1,5 @@
 /// fetch lego set data using the rebrickable api v3
 /// https://rebrickable.com/api/v3/docs/
-use reqwest;
 use serde_json::Value;
 
 const CATEGORY_PAGE_SIZE: i32 = 500;
@@ -124,7 +123,8 @@ impl color {
             1000, api_token
         );
         println!("Downloading {}", url);
-        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        let response =
+            reqwest::blocking::get(&url).unwrap_or_else(|_| panic!("Error downloading {}", url));
         if response.status() != 200 {
             panic!("Error downloading {}", url);
         }
@@ -165,7 +165,8 @@ impl part_category {
             CATEGORY_PAGE_SIZE, api_token
         );
         println!("Downloading {}", url);
-        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        let response =
+            reqwest::blocking::get(&url).unwrap_or_else(|_| panic!("Error downloading {}", url));
         if response.status() != 200 {
             panic!("Error downloading {}", url);
         }
@@ -197,10 +198,10 @@ impl part_category {
 impl inventory {
     pub fn new(set_num: &str) -> inventory {
         // check if set_num has 3 to 5 digits without leading zero followed by a dash and 1 digit
-        if !set_num.contains("-")
+        if !set_num.contains('-')
             || set_num.len() < 5
             || set_num.len() > 7
-            || set_num.starts_with("0")
+            || set_num.starts_with('0')
             || set_num.chars().nth(set_num.len() - 2).unwrap() != '-'
             || set_num.chars().nth(set_num.len() - 1).unwrap() < '1'
             || set_num.chars().nth(set_num.len() - 1).unwrap() > '9'
@@ -230,14 +231,16 @@ impl inventory {
             );
             println!("Downloading {}", url);
 
-            let response =
-                reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+            let response = reqwest::blocking::get(&url)
+                .unwrap_or_else(|_| panic!("Error downloading {}", url));
             if response.status() != 200 {
                 break;
             }
 
             // get response body
-            let response_text = response.text().expect(&format!("Error reading {}", url));
+            let response_text = response
+                .text()
+                .unwrap_or_else(|_| panic!("Error reading {}", url));
             let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
                 Ok(v) => v,
                 Err(e) => {
@@ -246,26 +249,26 @@ impl inventory {
             };
             let results = response_json["results"]
                 .as_array()
-                .expect(&format!("Error parsing json {}", response_json));
-            if results.len() == 0 {
+                .unwrap_or_else(|| panic!("Error parsing json {}", response_json));
+            if results.is_empty() {
                 break;
             }
             for result in results {
                 let part_num = result["part"]["part_num"]
                     .as_str()
-                    .expect(&format!("Error parsing part_num {}", result))
+                    .unwrap_or_else(|| panic!("Error parsing part_num {}", result))
                     .to_string();
                 let color_id = result["color"]["id"]
                     .as_i64()
-                    .expect(&format!("Error parsing color_id {}", result))
+                    .unwrap_or_else(|| panic!("Error parsing color_id {}", result))
                     as i32;
                 let quantity = result["quantity"]
                     .as_i64()
-                    .expect(&format!("Error parsing quantity {}", result))
+                    .unwrap_or_else(|| panic!("Error parsing quantity {}", result))
                     as i32;
                 let is_spare = result["is_spare"]
                     .as_bool()
-                    .expect(&format!("Error parsing is_spare {}", result));
+                    .unwrap_or_else(|| panic!("Error parsing is_spare {}", result));
                 inventory_parts.push(inventory_part {
                     id: 0,
                     set_num: self.set_num.clone(),
@@ -290,13 +293,16 @@ impl part_details {
             part.part_num, api_token
         );
         println!("Downloading {}", url);
-        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        let response =
+            reqwest::blocking::get(&url).unwrap_or_else(|_| panic!("Error downloading {}", url));
         if response.status() != 200 {
             println!("response: {:#?}", response);
             panic!("Error downloading {}", url);
         }
         // get response body
-        let response_text = response.text().expect(&format!("Error reading {}", url));
+        let response_text = response
+            .text()
+            .unwrap_or_else(|_| panic!("Error reading {}", url));
         let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
             Ok(v) => v,
             Err(e) => {
@@ -308,52 +314,52 @@ impl part_details {
         let part_details = part_details {
             part_num: response_json["part_num"]
                 .as_str()
-                .expect(&format!("Error parsing part_num {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing part_num {}", response_json))
                 .to_string(),
             name: response_json["name"]
                 .as_str()
-                .expect(&format!("Error parsing name {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing name {}", response_json))
                 .to_string(),
             part_cat_id: response_json["part_cat_id"]
                 .as_i64()
-                .expect(&format!("Error parsing part_cat_id {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing part_cat_id {}", response_json))
                 as i32,
             year_from: response_json["year_from"]
                 .as_i64()
-                .expect(&format!("Error parsing year {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing year {}", response_json))
                 as i32,
             year_to: response_json["year_to"]
                 .as_i64()
-                .expect(&format!("Error parsing year {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing year {}", response_json))
                 as i32,
             part_url: response_json["part_url"]
                 .as_str()
-                .expect(&format!("Error parsing part_url {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing part_url {}", response_json))
                 .to_string(),
             part_img_url: match response_json["part_img_url"] {
                 serde_json::Value::Null => None,
                 _ => Some(
                     response_json["part_img_url"]
                         .as_str()
-                        .expect(&format!("Error parsing part_img_url {}", response_json))
+                        .unwrap_or_else(|| panic!("Error parsing part_img_url {}", response_json))
                         .to_string(),
                 ),
             },
             prints: response_json["prints"]
                 .as_array()
-                .expect(&format!("Error parsing prints {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing prints {}", response_json))
                 .iter()
                 .map(|print| print.to_string())
                 .collect(),
             molds: response_json["molds"]
                 .as_array()
-                .expect(&format!("Error parsing molds {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing molds {}", response_json))
                 .iter()
                 .map(|mold| mold.to_string())
                 .collect(),
             alternates: response_json["alternates"]
                 .as_array()
-                .expect(&format!("Error parsing alternates {}", response_json))
+                .unwrap_or_else(|| panic!("Error parsing alternates {}", response_json))
                 .iter()
                 .map(|alternate| alternate.to_string())
                 .collect(),
@@ -362,7 +368,7 @@ impl part_details {
                 _ => Some(
                     response_json["print_of"]
                         .as_str()
-                        .expect(&format!("Error parsing print_of {}", response_json))
+                        .unwrap_or_else(|| panic!("Error parsing print_of {}", response_json))
                         .to_string(),
                 ),
             },
@@ -398,7 +404,7 @@ impl part_details {
     }
 
     // get many part_details at once
-    pub fn get_many(part_numbers: &Vec<String>, api_token: &str) -> Vec<part_details> {
+    pub fn get_many(part_numbers: Vec<String>, api_token: &str) -> Vec<part_details> {
         // split part_numbers into chunks of 100
         let mut part_details = Vec::new();
         for chunk in part_numbers.chunks(100) {
@@ -415,13 +421,16 @@ impl part_details {
             part_numbers.join(",")
         );
         println!("Downloading {}", url);
-        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        let response =
+            reqwest::blocking::get(&url).unwrap_or_else(|_| panic!("Error downloading {}", url));
         if response.status() != 200 {
             println!("response: {:#?}", response);
             panic!("Error downloading {}", url);
         }
         // get response body
-        let response_text = response.text().expect(&format!("Error reading {}", url));
+        let response_text = response
+            .text()
+            .unwrap_or_else(|_| panic!("Error reading {}", url));
         let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
             Ok(v) => v,
             Err(e) => {
@@ -432,59 +441,59 @@ impl part_details {
 
         let many_part_details = response_json["results"]
             .as_array()
-            .expect(&format!("Error parsing results {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing results {}", response_json))
             .iter()
             .map(|result| {
                 // println!("Parsing {}", result);
                 let part_details = part_details {
                     part_num: result["part_num"]
                         .as_str()
-                        .expect(&format!("Error parsing part_num {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing part_num {}", result))
                         .to_string(),
                     name: result["name"]
                         .as_str()
-                        .expect(&format!("Error parsing name {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing name {}", result))
                         .to_string(),
                     part_cat_id: result["part_cat_id"]
                         .as_i64()
-                        .expect(&format!("Error parsing part_cat_id {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing part_cat_id {}", result))
                         as i32,
                     year_from: result["year_from"]
                         .as_i64()
-                        .expect(&format!("Error parsing year {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing year {}", result))
                         as i32,
                     year_to: result["year_to"]
                         .as_i64()
-                        .expect(&format!("Error parsing year {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing year {}", result))
                         as i32,
                     part_url: result["part_url"]
                         .as_str()
-                        .expect(&format!("Error parsing part_url {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing part_url {}", result))
                         .to_string(),
                     part_img_url: match result["part_img_url"] {
                         serde_json::Value::Null => None,
                         _ => Some(
                             result["part_img_url"]
                                 .as_str()
-                                .expect(&format!("Error parsing part_img_url {}", result))
+                                .unwrap_or_else(|| panic!("Error parsing part_img_url {}", result))
                                 .to_string(),
                         ),
                     },
                     prints: result["prints"]
                         .as_array()
-                        .expect(&format!("Error parsing prints {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing prints {}", result))
                         .iter()
                         .map(|print| print.to_string())
                         .collect(),
                     molds: result["molds"]
                         .as_array()
-                        .expect(&format!("Error parsing molds {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing molds {}", result))
                         .iter()
                         .map(|mold| mold.to_string())
                         .collect(),
                     alternates: result["alternates"]
                         .as_array()
-                        .expect(&format!("Error parsing alternates {}", result))
+                        .unwrap_or_else(|| panic!("Error parsing alternates {}", result))
                         .iter()
                         .map(|alternate| alternate.to_string())
                         .collect(),
@@ -493,7 +502,7 @@ impl part_details {
                         _ => Some(
                             result["print_of"]
                                 .as_str()
-                                .expect(&format!("Error parsing print_of {}", result))
+                                .unwrap_or_else(|| panic!("Error parsing print_of {}", result))
                                 .to_string(),
                         ),
                     },
@@ -565,7 +574,7 @@ impl inventory_part {
             .collect::<Vec<String>>();
         part_quantities.sort();
         part_quantities.dedup();
-        println!("{} {} {} {}", "Part", "Color", "Quantity", "Spare");
+        println!("Part Color Quantity Spare");
         for part_number in part_numbers {
             for part_color in &part_colors {
                 let mut quantity = 0;
@@ -599,12 +608,15 @@ impl part {
             part_num, api_token
         );
         println!("Downloading {}", url);
-        let response = reqwest::blocking::get(&url).expect(&format!("Error downloading {}", url));
+        let response =
+            reqwest::blocking::get(&url).unwrap_or_else(|_| panic!("Error downloading {}", url));
         if response.status() != 200 {
             panic!("Error downloading {}", url);
         }
         // get response body
-        let response_text = response.text().expect(&format!("Error reading {}", url));
+        let response_text = response
+            .text()
+            .unwrap_or_else(|_| panic!("Error reading {}", url));
         let response_json: serde_json::Value = match serde_json::from_str(&response_text) {
             Ok(v) => v,
             Err(e) => {
@@ -613,34 +625,34 @@ impl part {
         };
         let part_num = response_json["part_num"]
             .as_str()
-            .expect(&format!("Error parsing part_num {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing part_num {}", response_json))
             .to_string();
         let name = response_json["name"]
             .as_str()
-            .expect(&format!("Error parsing name {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing name {}", response_json))
             .to_string();
         let part_url = response_json["part_url"]
             .as_str()
-            .expect(&format!("Error parsing part_url {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing part_url {}", response_json))
             .to_string();
         let part_img_url = response_json["part_img_url"]
             .as_str()
-            .expect(&format!("Error parsing part_img_url {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing part_img_url {}", response_json))
             .to_string();
         let external_ids = response_json["external_ids"]
             .as_array()
-            .expect(&format!("Error parsing external_ids {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing external_ids {}", response_json))
             .iter()
             .map(|external_id| {
                 external_id["external_id"]
                     .as_str()
-                    .expect(&format!("Error parsing external_id {}", external_id))
+                    .unwrap_or_else(|| panic!("Error parsing external_id {}", external_id))
                     .to_string()
             })
             .collect();
         let part_cat_id = response_json["part_cat_id"]
             .as_i64()
-            .expect(&format!("Error parsing part_cat_id {}", response_json))
+            .unwrap_or_else(|| panic!("Error parsing part_cat_id {}", response_json))
             as i32;
         part {
             id: 0,

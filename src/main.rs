@@ -29,7 +29,7 @@ fn download_plot(set_num: &str, api_token: &str) {
 
     // get part details for all parts
     let all_part_details = part_details::get_many(
-        &inventory_parts.iter().map(|p| p.get_part_num()).collect(),
+        inventory_parts.iter().map(|p| p.get_part_num()).collect(),
         api_token,
     );
     println!("Got part details for {} parts", all_part_details.len());
@@ -86,7 +86,7 @@ fn download_plot(set_num: &str, api_token: &str) {
             .iter()
             .find(|category_details| category_details.get_id() == *a)
         {
-            Some(category_details) => category_details.get_name().clone(),
+            Some(category_details) => category_details.get_name(),
             None => {
                 println!(
                     "Error finding part_category_name for part_category_id {}",

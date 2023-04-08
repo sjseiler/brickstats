@@ -62,7 +62,9 @@ fn download_plot(set_num: &str, api_token: &str) {
         ));
     }
 
-    // sort data tuples by color_id
+    // sort by quantity first
+    data_tuples.sort_by(|a, b| b.1.cmp(&a.1));
+    // then by color_id
     data_tuples.sort_by(|a, b| a.2.cmp(&b.2));
 
     let mut data: Vec<Vec<i32>> = Vec::new();

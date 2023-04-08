@@ -12,7 +12,7 @@ set style histogram rowstacked
 set style fill solid border -1
 set boxwidth 0.9 relative
 set key autotitle columnheader 
-set ytics 10
+set ytics auto
 #set mytics 5
 set xtics rotate by -45 scale 0
 set grid ytics";

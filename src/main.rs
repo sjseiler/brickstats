@@ -111,17 +111,6 @@ fn download_plot(set_num: &str, api_token: &str) {
         a_name.cmp(&b_name)
     });
 
-    // remove duplicate part_id and color combinations from data_tuples by summing quantities
-    let mut i = 0;
-    while i < data_tuples.len() - 1 {
-        if data_tuples[i].0 == data_tuples[i + 1].0 && data_tuples[i].2 == data_tuples[i + 1].2 {
-            data_tuples[i].1 += data_tuples[i + 1].1;
-            data_tuples.remove(i + 1);
-        } else {
-            i += 1;
-        }
-    }
-
     // fill data and color_ids with with datatuples values
     for tuple in &data_tuples {
         // get index of part_category_id in unique_part_category_ids

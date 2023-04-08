@@ -8,7 +8,6 @@
 
 ## To dos
 * remove spares from set inventory
-* accept set numbers without '-1' or '-2'
 * use color rgb values from initial inventory download
 * add caching to color and category list to improve speed
 * export histogram as png instead of opening gnuplot

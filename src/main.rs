@@ -1,25 +1,41 @@
 mod plot;
 mod rebrickable;
 mod stats;
+use clap::{arg, Command};
 /// A tool for generating lego related diagrams and visualizations.
 use std::fs::read_to_string;
 
 use rebrickable::{color, inventory, part_category, part_details};
 
 fn main() {
+    let matches = Command::new("brickstats")
+        .version("0.1")
+        .author("Sebastian Seiler <sebastian.seiler@posteo.de>")
+        .about("A tool for generating lego related diagrams and visualizations.")
+        .arg(arg!(-s --set <VALUE>).required(true))
+        .arg(arg!(-o --output <VALUE>).required(false))
+        .get_matches();
+
+    // print warning for dummy parameter "output"
+    if let Some(_output) = matches.get_one::<String>("output") {
+        println!("Warning: output parameter is not yet implemented");
+    }
+
+    // get set num from command line arguments in either format "12345-1" or "12345"
+    let set_num_raw = matches.get_one::<String>("set").expect("required");
+
+    // unify set_num_raw to format "12345-1"
+    let set_num = if set_num_raw.contains('-') {
+        set_num_raw.to_owned()
+    } else {
+        format!("{}-1", set_num_raw)
+    };
+
     // read api token from file "../secrets/api_token.txt"
     let api_token =
         read_to_string("secrets/api_token.txt").expect("Couldn't read api token from file");
 
-    // get set num from command line arguments
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() != 2 {
-        panic!("Usage: lego <set_num>");
-    }
-    let set_num = &args[1];
-    println!("set_num: {}", set_num);
-
-    download_plot(set_num, &api_token);
+    download_plot(&set_num, &api_token);
 }
 
 fn download_plot(set_num: &str, api_token: &str) {

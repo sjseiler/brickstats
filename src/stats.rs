@@ -1,4 +1,4 @@
-use crate::rebrickable::{inventory_part, part_details};
+use crate::input::{inventory_part, part_details};
 
 // calculate average age of parts in inventory
 #[allow(dead_code)]

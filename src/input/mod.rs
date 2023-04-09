@@ -6,7 +6,7 @@ pub use rebrickable::{color, inventory, inventory_part, part_category, part_deta
 pub fn get_dataset_from_rebrickable(set_num: &str, api_token: &str) -> Dataset {
     // download set inventory
     let inventory = inventory::new(set_num);
-    let inventory_parts = inventory.download(api_token);
+    let inventory_parts = inventory.download(api_token, false);
 
     // get part details for all parts
     let all_part_details = part_details::get_many(

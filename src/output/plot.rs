@@ -39,7 +39,7 @@ impl Gnuplot {
             data,
             colors,
             output,
-            format!("Parts of Set {set_num} (including spares)"),
+            format!("Parts of Set {set_num}"),
         );
 
         let mut process = Command::new("gnuplot")

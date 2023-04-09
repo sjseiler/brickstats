@@ -7,7 +7,6 @@
 * plot correctly colored histogram of part list with category names as bins using gnuplot
 
 ## To dos
-* remove spares from set inventory
 * label histogram total amount per bin
 * improve performance by reducing loops over data vectors (e.g. part category id and part category names)
 * show transparent colors as transparent

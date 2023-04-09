@@ -276,7 +276,8 @@ impl inventory {
             last_modified_dt,
         }
     }
-    pub fn download(&self, api_token: &str) -> Vec<inventory_part> {
+
+    pub fn download(&self, api_token: &str, include_spares: bool) -> Vec<inventory_part> {
         let mut inventory_parts = Vec::new();
         let mut page = 1;
         loop {
@@ -324,6 +325,9 @@ impl inventory {
                 let is_spare = result["is_spare"]
                     .as_bool()
                     .unwrap_or_else(|| panic!("Error parsing is_spare {}", result));
+                if is_spare && !include_spares {
+                    continue;
+                }
                 inventory_parts.push(inventory_part {
                     id: 0,
                     set_num: self.set_num.clone(),

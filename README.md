@@ -13,5 +13,4 @@
 * mark prints with (e.g. with dashes)
 * increase number of parts per page
 * add total amount of parts to histogram (official value)
-* improve font and font size of histogram
 * refactoring

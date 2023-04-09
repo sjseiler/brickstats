@@ -4,6 +4,9 @@ use std::process::{Command, Stdio};
 
 // convert to png with something similar to >> set terminal pngcairo enhanced font \"Times New Roman,12.0\" size 1500,1100
 pub const DEFAULT_CONFIG: &str = "
+set lmargin screen 0.05
+set rmargin screen 0.95
+set tmargin screen 0.9
 set palette rgbformulae 3,2,2
 set palette maxcolors 256
 unset colorbox
@@ -15,7 +18,10 @@ set key autotitle columnheader
 set ytics auto
 #set mytics 5
 set xtics rotate by -45 scale 0
-set grid ytics";
+set grid ytics
+set title font \"Helvetica,20\"
+"; 
+
 
 /// gnuplot object
 pub struct Gnuplot {

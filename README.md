@@ -12,5 +12,6 @@
 * show transparent colors as transparent
 * mark prints with (e.g. with dashes)
 * increase number of parts per page
-* add total amount of parts to histogram (official value)
 * refactoring
+* add word clouds
+* add stats summary in top right corner

@@ -1,9 +1,13 @@
+use serde::{Deserialize, Serialize};
 /// fetch lego set data using the rebrickable api v3
 /// https://rebrickable.com/api/v3/docs/
 use serde_json::Value;
+use std::path::Path;
 
 const CATEGORY_PAGE_SIZE: i32 = 500;
 const INVENTORY_PAGE_SIZE: i32 = 100;
+const COLOR_PATH: &str = "data/colors.csv";
+const CATEGORY_PATH: &str = "data/categories.csv";
 
 // rebrickable database objects
 #[allow(non_camel_case_types, dead_code)]
@@ -33,14 +37,14 @@ pub struct element {
     color_id: i32,
 }
 #[allow(non_camel_case_types, dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct part_category {
     id: i32,
     name: String,
     part_count: i32,
 }
 #[allow(non_camel_case_types, dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct color {
     id: i32,
     name: String,
@@ -115,7 +119,7 @@ pub struct theme {
 
 // get color rgb values for a vector of inventory_parts as a vector of
 impl color {
-    pub fn get_all(api_token: &str) -> Vec<color> {
+    fn get_all(api_token: &str) -> Vec<color> {
         // get list of part categories from /api/v3/lego/part_categories/
         // http request
         let url = format!(
@@ -147,6 +151,32 @@ impl color {
         colors
     }
 
+    // get all if not cached
+    pub fn get_all_cached(api_token: &str) -> Vec<color> {
+        // check if file exists
+        let path = Path::new(COLOR_PATH);
+        if path.exists() {
+            // read from file
+            let mut rdr = csv::Reader::from_path(path).unwrap();
+            let mut colors = Vec::new();
+            for result in rdr.deserialize() {
+                let record: color = result.unwrap();
+                colors.push(record);
+            }
+            colors
+        } else {
+            // download from rebrickable
+            let colors = color::get_all(api_token);
+            // write to file
+            let mut wtr = csv::Writer::from_path(path).unwrap();
+            for color in &colors {
+                wtr.serialize(color).unwrap();
+            }
+            wtr.flush().unwrap();
+            colors
+        }
+    }
+
     pub fn get_id(&self) -> i32 {
         self.id
     }
@@ -157,7 +187,7 @@ impl color {
 }
 
 impl part_category {
-    pub fn get_all(api_token: &str) -> Vec<part_category> {
+    fn get_all(api_token: &str) -> Vec<part_category> {
         // get list of part categories from /api/v3/lego/part_categories/
         // http request
         let url = format!(
@@ -183,6 +213,31 @@ impl part_category {
             });
         }
         part_categories
+    }
+
+    pub fn get_all_cached(api_token: &str) -> Vec<part_category> {
+        // check if file exists
+        let path = Path::new(CATEGORY_PATH);
+        if path.exists() {
+            // read from file
+            let mut rdr = csv::Reader::from_path(path).unwrap();
+            let mut part_categories = Vec::new();
+            for result in rdr.deserialize() {
+                let record: part_category = result.unwrap();
+                part_categories.push(record);
+            }
+            part_categories
+        } else {
+            // download from rebrickable
+            let part_categories = part_category::get_all(api_token);
+            // write to file
+            let mut wtr = csv::Writer::from_path(path).unwrap();
+            for category in &part_categories {
+                wtr.serialize(category).unwrap();
+            }
+            wtr.flush().unwrap();
+            part_categories
+        }
     }
 
     pub fn get_id(&self) -> i32 {

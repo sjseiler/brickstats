@@ -15,8 +15,8 @@ pub fn get_dataset_from_rebrickable(set_num: &str, api_token: &str) -> Dataset {
     );
     println!("Got part details for {} parts", all_part_details.len());
 
-    let category_details = part_category::get_all(api_token);
-    let colors = color::get_all(api_token);
+    let category_details = part_category::get_all_cached(api_token);
+    let colors = color::get_all_cached(api_token);
 
     // create new vector with (part_category_id, quantity, color_id) tuples
     let mut data_tuples: Vec<(i32, i32, i32)> = Vec::new();

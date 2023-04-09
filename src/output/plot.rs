@@ -20,8 +20,7 @@ set ytics auto
 set xtics rotate by -45 scale 0
 set grid ytics
 set title font \"Helvetica,20\"
-"; 
-
+";
 
 /// gnuplot object
 pub struct Gnuplot {

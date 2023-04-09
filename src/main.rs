@@ -19,9 +19,16 @@ fn main() {
         .arg(arg!(-f --file <VALUE>).required(false))
         .get_matches();
 
+    create_directories();
+
+    // if api token file is missing, print warning and return
+    if !Path::new("secrets/api_token.txt").exists() {
+        println!("Warning: api token file \"secrets/api_token.txt\" is missing");
+        return;
+    }
     // read api token from file "../secrets/api_token.txt"
     let api_token =
-        read_to_string("secrets/api_token.txt").expect("Couldn't read api token from file");
+        read_to_string("secrets/api_token.txt").expect("Error reading api token from file");
 
     let output_file;
     let title;
@@ -101,4 +108,14 @@ fn main() {
     };
 
     dataset.output(output_file, title);
+}
+
+// create "secrets", "images" and "data" directories if they don't exist
+fn create_directories() {
+    let directories = ["secrets", "images", "data"];
+    for directory in directories.iter() {
+        if !Path::new(directory).exists() {
+            std::fs::create_dir(directory).unwrap();
+        }
+    }
 }

@@ -11,7 +11,6 @@
 * improve performance by reducing loops over data vectors (e.g. part category id and part category names)
 * show transparent colors as transparent
 * mark prints with (e.g. with dashes)
-* increase number of parts per page
 * refactoring
 * add word clouds
 * add stats summary in top right corner

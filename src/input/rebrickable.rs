@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::path::Path;
 
 const CATEGORY_PAGE_SIZE: i32 = 500;
-const INVENTORY_PAGE_SIZE: i32 = 100;
+const INVENTORY_PAGE_SIZE: i32 = 500;
 const COLOR_PATH: &str = "data/colors.csv";
 const CATEGORY_PATH: &str = "data/categories.csv";
 
@@ -467,12 +467,12 @@ impl part_details {
         // split part_numbers into chunks of 100
         let mut part_details = Vec::new();
         for chunk in part_numbers.chunks(100) {
-            part_details.append(&mut part_details::get_100(&chunk.to_vec(), api_token));
+            part_details.append(&mut part_details::get_n(&chunk.to_vec(), api_token));
         }
         part_details
     }
 
-    pub fn get_100(part_numbers: &Vec<String>, api_token: &str) -> Vec<part_details> {
+    pub fn get_n(part_numbers: &Vec<String>, api_token: &str) -> Vec<part_details> {
         println!("Getting part details for {} parts", part_numbers.len());
         let url = format!(
             "https://rebrickable.com/api/v3/lego/parts/?key={}&part_nums={}&inc_part_details=1",

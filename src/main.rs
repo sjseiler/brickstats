@@ -13,9 +13,16 @@ fn main() {
         .version("0.1")
         .author("Sebastian Seiler <sebastian.seiler@posteo.de>")
         .about("A tool for generating lego related diagrams and visualizations.")
-        .arg(arg!(-s --set <VALUE>).required(true))
+        .arg(arg!(-s --set <VALUE>).required(false))
         .arg(arg!(-o --output <VALUE>).required(false))
+        .arg(arg!(-f --file <VALUE>).required(false))
         .get_matches();
+
+    // check if either set or file parameter is set
+    if matches.get_one::<String>("set").is_none() && matches.get_one::<String>("file").is_none() {
+        println!("Please specify either set or file parameter");
+        return;
+    }
 
     // get set num from command line arguments in either format "12345-1" or "12345"
     let set_num_raw = matches.get_one::<String>("set").expect("required");

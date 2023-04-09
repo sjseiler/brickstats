@@ -26,15 +26,63 @@ pub struct Gnuplot {
 }
 
 impl Gnuplot {
-    pub fn show(
-        config: &str,
+    // create output fn that replaces show and save_png
+    pub fn output(
         labels: Vec<String>,
         data: Vec<Vec<i32>>,
         colors: Vec<String>,
+        set_num: String,
+        output: Option<String>,
     ) -> Result<()> {
+        let (config_string, data_string) = Gnuplot::prepare_plotting(
+            labels,
+            data,
+            colors,
+            output,
+            format!("Parts of Set {set_num} (including spares)"),
+        );
+
+        let mut process = Command::new("gnuplot")
+            .arg("-p")
+            .stdin(Stdio::piped())
+            .spawn()
+            .expect("Couldn't spawn gnuplot. Make sure it is installed and available in PATH.");
+        {
+            let mut stdin = BufWriter::new(process.stdin.take().unwrap());
+            writeln!(stdin, "{}", config_string)?;
+            writeln!(stdin, "{}", data_string)?;
+            stdin.flush()?;
+        }
+
+        match process.wait() {
+            Ok(status) => {
+                if status.success() {
+                    Ok(())
+                } else {
+                    Err(Error::msg("gnuplot exited with non-zero status"))
+                }
+            }
+            Err(e) => Err(Error::msg(format!("gnuplot failed to run: {}", e))),
+        }
+    }
+
+    fn prepare_plotting(
+        labels: Vec<String>,
+        data: Vec<Vec<i32>>,
+        colors: Vec<String>,
+        file_name: Option<String>,
+        title: String,
+    ) -> (String, String) {
         let mut color_iter = colors.iter();
         // generate config string
-        let mut config_string = config.to_string();
+        let mut config_string = format!("{DEFAULT_CONFIG}\nset title \"{title}\"",);
+        if let Some(file_name) = file_name {
+            config_string.push_str(&format!("\nset output '{}'", file_name));
+            config_string.push_str(
+                "\nset terminal pngcairo enhanced font \"Times New Roman,12.0\" size 1920,1080",
+            );
+        }
+
         config_string.push_str(&format!(
             "\nplot '-' using 2:xtic(1) with histogram notitle lc rgb \"#{}\",",
             color_iter.next().expect("didn't get enough colors")
@@ -66,26 +114,6 @@ impl Gnuplot {
         // print config and data
         // println!("{}", config_string);
         // println!("{}", data_string);
-
-        let mut process = Command::new("gnuplot")
-            .arg("-p")
-            .stdin(Stdio::piped())
-            .spawn()
-            .expect("Couldn't spawn gnuplot. Make sure it is installed and available in PATH.");
-        let mut stdin = BufWriter::new(process.stdin.take().unwrap());
-        writeln!(stdin, "{}", config_string)?;
-        writeln!(stdin, "{}", data_string)?;
-        stdin.flush()?;
-
-        match process.wait() {
-            Ok(status) => {
-                if status.success() {
-                    Ok(())
-                } else {
-                    Err(Error::msg("gnuplot exited with non-zero status"))
-                }
-            }
-            Err(e) => Err(Error::msg(format!("gnuplot failed to run: {}", e))),
-        }
+        (config_string, data_string)
     }
 }

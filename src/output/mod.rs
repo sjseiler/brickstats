@@ -23,18 +23,15 @@ impl Dataset {
             color_rgbs,
         }
     }
-}
 
-pub fn open_histogram_in_gnuplot(dataset: Dataset) {
-    Gnuplot::show(
-        &format!(
-            "{}\nset title \"Parts of Set {} (including spares)",
-            plot::DEFAULT_CONFIG,
-            dataset.set_num,
-        ),
-        dataset.labels,
-        dataset.data,
-        dataset.color_rgbs,
-    )
-    .unwrap();
+    pub fn output(&self, output: Option<String>) {
+        Gnuplot::output(
+            self.labels.clone(),
+            self.data.clone(),
+            self.color_rgbs.clone(),
+            self.set_num.clone(),
+            output,
+        )
+        .unwrap();
+    }
 }

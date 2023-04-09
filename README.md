@@ -15,4 +15,3 @@
 * add total amount of parts to histogram (official value)
 * improve font and font size of histogram
 * refactoring
-* add support for rebrickable csv files

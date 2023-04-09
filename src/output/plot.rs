@@ -31,16 +31,11 @@ impl Gnuplot {
         labels: Vec<String>,
         data: Vec<Vec<i32>>,
         colors: Vec<String>,
-        set_num: String,
+        title: String,
         output: Option<String>,
     ) -> Result<()> {
-        let (config_string, data_string) = Gnuplot::prepare_plotting(
-            labels,
-            data,
-            colors,
-            output,
-            format!("Parts of Set {set_num}"),
-        );
+        let (config_string, data_string) =
+            Gnuplot::prepare_plotting(labels, data, colors, output, title);
 
         let mut process = Command::new("gnuplot")
             .arg("-p")

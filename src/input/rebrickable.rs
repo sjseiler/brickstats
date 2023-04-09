@@ -592,6 +592,22 @@ pub struct part_details {
 }
 
 impl inventory_part {
+    pub fn new_simplified(
+        part_num: String,
+        color_id: i32,
+        quantity: i32,
+        is_spare: bool,
+    ) -> inventory_part {
+        inventory_part {
+            id: -1,
+            set_num: "".to_string(),
+            part_num,
+            color_id,
+            quantity,
+            is_spare,
+        }
+    }
+
     pub fn get_part_num(&self) -> String {
         self.part_num.clone()
     }

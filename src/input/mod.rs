@@ -2,12 +2,18 @@ mod rebrickable;
 
 use crate::output::Dataset;
 pub use rebrickable::{color, inventory, inventory_part, part_category, part_details};
+use serde::{de, Deserialize};
+use std::path::Path;
 
-pub fn get_dataset_from_rebrickable(set_num: &str, api_token: &str) -> Dataset {
+pub fn dataset_from_rebrickable(set_num: &str, api_token: &str) -> Dataset {
     // download set inventory
     let inventory = inventory::new(set_num);
     let inventory_parts = inventory.download(api_token, false);
 
+    prepare_dataset(inventory_parts, api_token)
+}
+
+fn prepare_dataset(inventory_parts: Vec<inventory_part>, api_token: &str) -> Dataset {
     // get part details for all parts
     let all_part_details = part_details::get_many(
         inventory_parts.iter().map(|p| p.get_part_num()).collect(),
@@ -146,5 +152,63 @@ pub fn get_dataset_from_rebrickable(set_num: &str, api_token: &str) -> Dataset {
         color_rgbs.push(rgb);
     }
 
-    Dataset::new(set_num.to_owned(), labels, data, color_rgbs)
+    Dataset::new("".to_string(), labels, data, color_rgbs)
+}
+
+#[derive(Debug, Deserialize)]
+struct DatasetEntry {
+    #[serde(rename = "Part")]
+    part: String,
+    #[serde(rename = "Quantity")]
+    quantity: i32,
+    #[serde(rename = "Color")]
+    color_id: i32,
+    #[serde(rename = "Is Spare", deserialize_with = "deserialize_bool", default)]
+    is_spare: Option<bool>,
+}
+
+fn deserialize_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    match s.as_ref() {
+        "False" => Ok(Some(false)),
+        "True" => Ok(Some(true)),
+        _ => Err(serde::de::Error::custom(format!("invalid bool: {}", s))),
+    }
+}
+
+pub fn dataset_from_file(path: &str, api_token: &str) -> Dataset {
+    // check if path exists and open file
+    let path = Path::new(path);
+    if !path.exists() {
+        // output error message
+        println!("Error: file {} does not exist", path.display());
+        // return empty dataset
+        Dataset::new("".to_string(), Vec::new(), Vec::new(), Vec::new())
+    } else {
+        // read csv file with columns Part,Color,Quantity,Is Spare
+        let mut rdr = csv::Reader::from_path(path).unwrap();
+
+        let mut inventory_parts = Vec::new();
+
+        // read csv file into data
+        for result in rdr.deserialize() {
+            let record: DatasetEntry = result.unwrap();
+
+            if record.is_spare == Some(true) {
+                continue;
+            }
+
+            inventory_parts.push(inventory_part::new_simplified(
+                record.part,
+                record.color_id,
+                record.quantity,
+                true,
+            ));
+        }
+
+        prepare_dataset(inventory_parts, api_token)
+    }
 }

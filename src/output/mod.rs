@@ -1,7 +1,9 @@
 mod plot;
 
 use plot::Gnuplot;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Dataset {
     set_num: String,
     labels: Vec<String>,
@@ -24,12 +26,12 @@ impl Dataset {
         }
     }
 
-    pub fn output(&self, output: Option<String>) {
+    pub fn output(&self, output: Option<String>, title: String) {
         Gnuplot::output(
             self.labels.clone(),
             self.data.clone(),
             self.color_rgbs.clone(),
-            self.set_num.clone(),
+            title,
             output,
         )
         .unwrap();

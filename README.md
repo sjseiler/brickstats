@@ -25,6 +25,7 @@
 * -f --file  [filename] # rebrickable .csv file to parse
 * -s --set [set number] # set number in 12345-1 or 12345 format to fetch from rebrickable.com
 * -o --output [output type] # set output to "png" to create a png file instead of showing the diagram in gnuplot (no other output types supported yet)
+* -w -- wordcloud # additionally create a png wordcloud
 
 ## Examples
 1. plot diagram for set 40567-1 as png
@@ -33,11 +34,13 @@
 2. show diagram for file input/example.csv in gnuplot
 ```cargo run --release -- -f "input/example.csv"```
 
+3. plot diagram and wordcloud for set 375-2
+```cargo run --release -- -s 375-2 -o png -w```
+
 ## To dos
 * label histogram total amount per bin
 * improve performance by reducing loops over data vectors (e.g. part category id and part category names)
 * show transparent colors as transparent
 * mark prints with (e.g. with dashes)
 * refactoring
-* add word clouds
 * add stats summary in top right corner

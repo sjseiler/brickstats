@@ -1,11 +1,11 @@
 mod rebrickable;
 
-use crate::output::Dataset;
+use crate::output::{Dataset, InventoryEntry};
 pub use rebrickable::{color, inventory, inventory_part, part_category, part_details};
-use serde::{de, Deserialize, Serialize};
+use serde::{de, Deserialize};
 use std::path::Path;
 
-pub struct Rebrickable{
+pub struct Rebrickable {
     api_token: String,
 }
 
@@ -39,8 +39,12 @@ impl Rebrickable {
     }
 }
 
-pub fn prepare_dataset(inventory_parts: Vec<inventory_part>, part_details: Vec<part_details>, categories: Vec<part_category>, colors: Vec<color>) -> Dataset {   
-
+pub fn prepare_dataset(
+    inventory_parts: Vec<inventory_part>,
+    part_details: Vec<part_details>,
+    categories: Vec<part_category>,
+    colors: Vec<color>,
+) -> Dataset {
     // create new vector with (part_category_id, quantity, color_id) tuples
     let mut data_tuples: Vec<(i32, i32, i32)> = Vec::new();
     // for all inventory_parts
@@ -226,48 +230,31 @@ pub fn inventory_from_file(path: &str) -> Vec<inventory_part> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct InventoryEntry {
-    color: String,
-    part_name: String,
-    quantity: i32,
-}
-
-pub fn formatted_rebrickable_inventory(
-    set_num: &str,
-    api_token: &str,
-    path: &str,
+pub fn formatted_inventory(
+    inventory_parts: &[inventory_part],
+    part_details: &[part_details],
+    colors: &[color],
 ) -> Vec<InventoryEntry> {
-    let inventory_parts = inventory::new(set_num).download(api_token, false);
-
-    // get part details for all inventory parts
-    let all_part_details = part_details::get_many(
-        inventory_parts.iter().map(|p| p.part_num()).collect(),
-        api_token,
-    );
-
-    let all_colors = color::get_all_cached(api_token);
-
     // create inventory entries for all inventory parts
     let mut inventory_entries: Vec<InventoryEntry> = Vec::new();
     for inventory_part in inventory_parts {
-        let part_details = all_part_details
+        let part_details = part_details
             .iter()
             .find(|part_details| part_details.part_num() == inventory_part.part_num())
             .unwrap();
 
         // find color name in colors
-        let color_name = all_colors
+        let color_name = colors
             .iter()
             .find(|color| color.id() == inventory_part.color_id())
             .unwrap()
             .name();
 
-        inventory_entries.push(InventoryEntry {
-            color: color_name,
-            part_name: part_details.name(),
-            quantity: inventory_part.quantity(),
-        });
+        inventory_entries.push(InventoryEntry::new(
+            color_name,
+            part_details.name(),
+            inventory_part.quantity(),
+        ));
     }
     inventory_entries
 }

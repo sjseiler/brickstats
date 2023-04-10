@@ -106,14 +106,14 @@ impl Gnuplot {
         labels: Vec<String>,
         data: Vec<Vec<i32>>,
         colors: Vec<String>,
-        file_name: Option<String>,
+        file_name_prefix: Option<String>,
         title: String,
     ) -> (String, String) {
         let mut color_iter = colors.iter();
         // generate config string
         let mut config_string = format!("{DEFAULT_CONFIG}\nset title \"{title}\"",);
-        if let Some(file_name) = file_name {
-            config_string.push_str(&format!("\nset output '{}'", file_name));
+        if let Some(file_name) = file_name_prefix {
+            config_string.push_str(&format!("\nset output '{}_histogram.png'", file_name));
             config_string.push_str(
                 "\nset terminal pngcairo enhanced font \"Times New Roman,12.0\" size 1920,1080",
             );

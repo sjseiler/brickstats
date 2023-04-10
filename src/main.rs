@@ -67,7 +67,12 @@ fn main() {
             title = format!("Parts of Set {set_num}");
 
             // download set inventory
-            rebrickable.inventory(&set_num)
+            let inventory = rebrickable.inventory(&set_num);
+            if inventory.is_empty() {
+                println!("Error: inventory for set {} does not exist (yet)", set_num);
+                return;
+            }
+            inventory
         }
         None => {
             if let Some(file) = matches.get_one::<String>("file") {

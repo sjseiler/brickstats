@@ -14,3 +14,4 @@ lazy_static = "1.4"
 anyhow = "1.0"
 clap = { version = "4.1", features = ["cargo"] }
 csv = "1.1"
+regex = "1.5"

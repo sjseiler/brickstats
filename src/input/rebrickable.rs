@@ -177,12 +177,16 @@ impl color {
         }
     }
 
-    pub fn get_id(&self) -> i32 {
+    pub fn id(&self) -> i32 {
         self.id
     }
 
-    pub fn get_rgb(&self) -> String {
+    pub fn rgb(&self) -> String {
         self.rgb.clone()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -435,16 +439,20 @@ impl part_details {
         part_details
     }
 
-    pub fn get_part_num(&self) -> String {
+    pub fn part_num(&self) -> String {
         self.part_num.clone()
     }
 
-    pub fn get_part_cat_id(&self) -> i32 {
+    pub fn part_cat_id(&self) -> i32 {
         self.part_cat_id
     }
 
-    pub fn get_year_from(&self) -> i32 {
+    pub fn year_from(&self) -> i32 {
         self.year_from
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 
     // print part details nicely formatted
@@ -608,15 +616,15 @@ impl inventory_part {
         }
     }
 
-    pub fn get_part_num(&self) -> String {
+    pub fn part_num(&self) -> String {
         self.part_num.clone()
     }
 
-    pub fn get_color_id(&self) -> i32 {
+    pub fn color_id(&self) -> i32 {
         self.color_id
     }
 
-    pub fn get_quantity(&self) -> i32 {
+    pub fn quantity(&self) -> i32 {
         self.quantity
     }
 

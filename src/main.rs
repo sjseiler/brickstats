@@ -2,7 +2,7 @@ mod input;
 mod output;
 mod stats;
 
-use input::{dataset_from_file, dataset_from_rebrickable};
+use input::{inventory_from_file, Rebrickable, prepare_dataset};
 use std::path::Path;
 
 use clap::{arg, Command};
@@ -29,12 +29,13 @@ fn main() {
     // read api token from file "../secrets/api_token.txt"
     let api_token =
         read_to_string("secrets/api_token.txt").expect("Error reading api token from file");
+    let rebrickable = Rebrickable::new(api_token);
 
     let output_file;
     let title;
 
     // check set and file parameters
-    let dataset = match matches.get_one::<String>("set") {
+    let inventory = match matches.get_one::<String>("set") {
         Some(set) => {
             if matches.get_one::<String>("file").is_some() {
                 // print warning that file parameter is ignored
@@ -62,7 +63,8 @@ fn main() {
 
             title = format!("Parts of Set {set_num}");
 
-            dataset_from_rebrickable(&set_num, &api_token)
+            // download set inventory
+            rebrickable.inventory(&set_num)
         }
         None => {
             if let Some(file) = matches.get_one::<String>("file") {
@@ -98,7 +100,7 @@ fn main() {
                 title = format!("Parts of {file_name}");
 
                 // read dataset from file
-                dataset_from_file(file, &api_token)
+                inventory_from_file(file)
             } else {
                 // print error that neither set nor file parameter is set
                 println!("Error: neither set nor file parameter is set");
@@ -107,6 +109,14 @@ fn main() {
         }
     };
 
+    // fetch part, category and color details from rebrickable
+    let colors = rebrickable.all_colors();
+    let categories = rebrickable.all_categories();
+    let part_details = rebrickable.part_details(&inventory);
+
+
+    // prepare data for plot
+    let dataset = prepare_dataset(inventory, part_details, categories, colors);
     dataset.output(output_file, title);
 }
 

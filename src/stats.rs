@@ -10,8 +10,8 @@ pub fn average_part_year(inventory_parts: &[inventory_part], part_details: &[par
     let tuples = inventory_parts.iter().zip(part_details.iter());
 
     for (inventory_part, part_details) in tuples {
-        average_year += part_details.get_year_from() as f32 * inventory_part.get_quantity() as f32;
-        part_count += inventory_part.get_quantity();
+        average_year += part_details.year_from() as f32 * inventory_part.quantity() as f32;
+        part_count += inventory_part.quantity();
     }
     average_year / part_count as f32
 }

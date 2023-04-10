@@ -2,21 +2,24 @@ mod input;
 mod output;
 mod stats;
 
-use input::{dataset_from_file, dataset_from_rebrickable};
+use input::{formatted_inventory, inventory_from_file, prepare_dataset, Rebrickable};
+use output::wordcloud;
+use std::fs;
 use std::path::Path;
 
-use clap::{arg, Command};
+use clap::{self, arg};
 /// A tool for generating lego related diagrams and visualizations.
 use std::fs::read_to_string;
 
 fn main() {
-    let matches = Command::new("brickstats")
+    let matches = clap::Command::new("brickstats")
         .version("0.1")
         .author("Sebastian Seiler <sebastian.seiler@posteo.de>")
         .about("A tool for generating lego related diagrams and visualizations.")
         .arg(arg!(-s --set <VALUE>).required(false))
         .arg(arg!(-o --output <VALUE>).required(false))
         .arg(arg!(-f --file <VALUE>).required(false))
+        .arg(arg!(-w - -wordcloud).required(false))
         .get_matches();
 
     create_directories();
@@ -29,12 +32,13 @@ fn main() {
     // read api token from file "../secrets/api_token.txt"
     let api_token =
         read_to_string("secrets/api_token.txt").expect("Error reading api token from file");
+    let rebrickable = Rebrickable::new(api_token);
 
-    let output_file;
+    let output_file_prefix;
     let title;
 
     // check set and file parameters
-    let dataset = match matches.get_one::<String>("set") {
+    let inventory = match matches.get_one::<String>("set") {
         Some(set) => {
             if matches.get_one::<String>("file").is_some() {
                 // print warning that file parameter is ignored
@@ -48,9 +52,9 @@ fn main() {
                 format!("{}-1", set)
             };
 
-            output_file = match matches.get_one::<String>("output") {
+            output_file_prefix = match matches.get_one::<String>("output") {
                 // if output parameter is set to png, save as png
-                Some(output) if output == "png" => Some(format!("images/{set_num}_histogram.png")),
+                Some(output) if output == "png" => Some(format!("images/{set_num}")),
                 // if other output parameter is set, print warning
                 Some(output) => {
                     println!("Warning: output parameter \"{}\" is not supported", output);
@@ -62,7 +66,8 @@ fn main() {
 
             title = format!("Parts of Set {set_num}");
 
-            dataset_from_rebrickable(&set_num, &api_token)
+            // download set inventory
+            rebrickable.inventory(&set_num)
         }
         None => {
             if let Some(file) = matches.get_one::<String>("file") {
@@ -81,11 +86,9 @@ fn main() {
                     .next()
                     .unwrap();
 
-                output_file = match matches.get_one::<String>("output") {
+                output_file_prefix = match matches.get_one::<String>("output") {
                     // if output parameter is set to png, save as png
-                    Some(output) if output == "png" => {
-                        Some(format!("images/{file_name}_histogram.png"))
-                    }
+                    Some(output) if output == "png" => Some(format!("images/{file_name}")),
                     // if other output parameter is set, print warning
                     Some(output) => {
                         println!("Warning: output parameter \"{}\" is not supported", output);
@@ -98,7 +101,7 @@ fn main() {
                 title = format!("Parts of {file_name}");
 
                 // read dataset from file
-                dataset_from_file(file, &api_token)
+                inventory_from_file(file)
             } else {
                 // print error that neither set nor file parameter is set
                 println!("Error: neither set nor file parameter is set");
@@ -107,12 +110,34 @@ fn main() {
         }
     };
 
-    dataset.output(output_file, title);
+    // fetch part, category and color details from rebrickable
+    let colors = rebrickable.all_colors();
+    let categories = rebrickable.all_categories();
+    let part_details = rebrickable.part_details(&inventory);
+
+    // if wordcloud parameter is set, create wordcloud
+    if matches.get_flag("wordcloud") {
+        // create formatted inventory
+        let formatted_inventory = formatted_inventory(&inventory, &part_details, &colors);
+
+        // create filename
+        // either use set_num or input file name
+        let file_name = format!("{}_wordcloud.png", output_file_prefix.as_ref().unwrap());
+
+        wordcloud(formatted_inventory, &file_name).expect("failed to write wordcloud text file");
+    }
+
+    // prepare data for plot
+    let dataset = prepare_dataset(inventory, part_details, categories, colors);
+    dataset.output(output_file_prefix, title);
+
+    // remove temp files
+    fs::remove_dir_all("temp/").expect("failed to remove temp files");
 }
 
 // create "secrets", "images" and "data" directories if they don't exist
 fn create_directories() {
-    let directories = ["secrets", "images", "data"];
+    let directories = ["secrets", "images", "data", "temp"];
     for directory in directories.iter() {
         if !Path::new(directory).exists() {
             std::fs::create_dir(directory).unwrap();

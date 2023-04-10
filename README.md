@@ -5,10 +5,12 @@
     * official sets from rebrickable.com
     * any part list in rebrickable .csv format
 * plot correctly colored histogram of part list with category names as bins using gnuplot
+* plot wordcloud of inventory
 
 ## Prerequesites
 * Linux machine or Windows 11 with WSL (required for gnuplot)
 * gnuplot
+* wordcloud (https://github.com/amueller/word_cloud)
 * access to the internet (rebrickable.com)
 * rust installation for building (install with rustup)
 * rebrickable api token

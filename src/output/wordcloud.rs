@@ -58,14 +58,21 @@ fn text_file(inventory_entries: Vec<InventoryEntry>) -> Result<()> {
             })
             .to_string();
 
-        // add _ after each preposition
-        part_name_formatted = part_name_formatted.replace(" with ", " with_");
-        part_name_formatted = part_name_formatted.replace(" on ", " on_");
-        part_name_formatted = part_name_formatted.replace(" of ", " of_");
-        part_name_formatted = part_name_formatted.replace(" for ", " for_");
-        part_name_formatted = part_name_formatted.replace(" in ", " in_");
-        part_name_formatted = part_name_formatted.replace(" to ", " to_");
-        part_name_formatted = part_name_formatted.replace(" from ", " from_");
+        // add _ after each preposition, ignoring case
+        let re = Regex::new(r"(?i)\s(with|on|of|for|in|to|from|and|or)\s").unwrap();
+        part_name_formatted = re
+            .replace_all(&part_name_formatted, |caps: &regex::Captures| {
+                format!(" {}_", caps.get(1).unwrap().as_str().to_lowercase())
+            })
+            .to_string();
+
+        // add _ after each "_no " or " no ", ignoring case
+        let re = Regex::new(r"(?i)((\s|_)no)\s").unwrap();
+        part_name_formatted = re
+            .replace_all(&part_name_formatted, |caps: &regex::Captures| {
+                format!("{}_", caps.get(2).unwrap().as_str().to_lowercase())
+            })
+            .to_string();
 
         for _ in 0..entry.quantity {
             writeln!(file, "{} {}", color_formatted, part_name_formatted)?;
@@ -77,10 +84,6 @@ fn text_file(inventory_entries: Vec<InventoryEntry>) -> Result<()> {
 // create wordcloud from text file
 pub fn wordcloud(inventory_entries: Vec<InventoryEntry>, output_path: &str) -> Result<()> {
     text_file(inventory_entries)?;
-
-    // create stopwords file
-    let mut file = File::create("temp/stopwords.txt")?;
-    writeln!(file, r"\n")?;
 
     // run wordcloud_cli with text file as input and path as output
     Command::new("wordcloud_cli")
@@ -96,8 +99,6 @@ pub fn wordcloud(inventory_entries: Vec<InventoryEntry>, output_path: &str) -> R
         .arg("1920")
         .arg("--height")
         .arg("1080")
-        .arg("--stopwords")
-        .arg("temp/stopwords.txt")
         .output()?;
     Ok(())
 }

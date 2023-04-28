@@ -67,7 +67,12 @@ fn main() {
             title = format!("Parts of Set {set_num}");
 
             // download set inventory
-            rebrickable.inventory(&set_num)
+            let inventory = rebrickable.inventory(&set_num);
+            if inventory.is_empty() {
+                println!("Error: inventory for set {} does not exist (yet)", set_num);
+                return;
+            }
+            inventory
         }
         None => {
             if let Some(file) = matches.get_one::<String>("file") {
@@ -117,14 +122,20 @@ fn main() {
 
     // if wordcloud parameter is set, create wordcloud
     if matches.get_flag("wordcloud") {
-        // create formatted inventory
-        let formatted_inventory = formatted_inventory(&inventory, &part_details, &colors);
+        // check if output is set to png
+        if output_file_prefix.is_none() {
+            println!("Warning: wordcloud is only created if output parameter is set to png");
+        } else {
+            // create formatted inventory
+            let formatted_inventory = formatted_inventory(&inventory, &part_details, &colors);
 
-        // create filename
-        // either use set_num or input file name
-        let file_name = format!("{}_wordcloud.png", output_file_prefix.as_ref().unwrap());
+            // create filename
+            // either use set_num or input file name
+            let file_name = format!("{}_wordcloud.png", output_file_prefix.as_ref().unwrap());
 
-        wordcloud(formatted_inventory, &file_name).expect("failed to write wordcloud text file");
+            wordcloud(formatted_inventory, &file_name)
+                .expect("failed to write wordcloud text file");
+        }
     }
 
     // prepare data for plot

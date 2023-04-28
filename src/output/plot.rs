@@ -9,15 +9,10 @@ set lmargin screen 0.05
 set rmargin screen 0.95
 set tmargin screen 0.9
 set palette rgbformulae 3,2,2
-set palette maxcolors 256
-unset colorbox
-set style data histograms
 set style histogram rowstacked
 set style fill solid border -1
-set boxwidth 0.9 relative
-set key autotitle columnheader 
+set boxwidth 0.9 relative 
 set ytics auto
-#set mytics 5
 set xtics rotate by -45 scale 0
 set grid ytics
 set title font \"Helvetica,20\"
